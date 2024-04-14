@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 
 #define MAX_BUFFER_SIZE 256
@@ -8,6 +9,8 @@ int main(int argc, char *argv[]) {
     FILE *fp;
     char buffer[MAX_BUFFER_SIZE];
     double memoria_total = 0.0, memoria_usada = 0.0, porcentaje = 0.0, memVirtual, memReal;
+    char parametros[MAX_BUFFER_SIZE] = " " ;
+
     char *unit = argv[1];
     if (argc == 2){
     if (strcmp(unit, "-r") == 0) {
@@ -21,10 +24,9 @@ int main(int argc, char *argv[]) {
 
         porcentaje = (memoria_usada / memoria_total) * 100;
 
-        // Imprimir lo que se ha extraído
-        printf("Memoria Fisica total: %.2f MiB\n", memoria_total);
-        printf("Memoria Fisica usada: %.2f MiB\n", memoria_usada);
-        printf("Porcentaje de uso de memoria Fisica: %.2f%%\n", porcentaje);
+        
+        sprintf(parametros, "PORCENTAJE:%.2f%%\n", porcentaje);
+        write(STDOUT_FILENO, parametros, strlen(parametros));
 
     } else if (strcmp(unit, "-v") == 0) {
             fp = popen("top -b -n 1| grep 'MiB Swap'", "r");
@@ -37,25 +39,27 @@ int main(int argc, char *argv[]) {
 
         porcentaje = (memoria_usada / memoria_total) * 100;
 
-        printf("Memoria Virtual total: %.2f MiB\n", memoria_total);
-        printf("Memoria  Virtual usada: %.2f MiB\n", memoria_usada);
-        printf("Porcentaje de uso de memoria Virtual: %.2f%%\n", porcentaje);
-        
+
+        sprintf(parametros, "PORCENTAJE:%.2f%%\n", porcentaje);
+        write(STDOUT_FILENO, parametros, strlen(parametros));
     } 
     }else if (argc == 3){
             int pid = atoi(argv[2]);
             char command[MAX_BUFFER_SIZE];
             if (strcmp(unit, "-v") == 0) {   
-                snprintf(command, sizeof(command), "top -bn1 -p %d | awk 'NR>7 && $1==%d {{print $5/1024}}'", pid, pid);
+                snprintf(command, sizeof(command), "top -bn1 -p %d -c | awk 'NR>7 && $1==%d {print $13, $5/1024}'", pid, pid);
+
                 
                 fp = popen(command, "r");
                 if (fp == NULL) {
                     printf("Error al ejecutar el comando top\n");
                     return -1;
                 }
+
+                char nombre[25] = "";
                 if (fgets(buffer, sizeof(buffer), fp) != NULL) {
-                    sscanf(buffer, "%lf", &memVirtual);
-                     printf("valor memoria virtual: %lf \n", memVirtual);
+                    sscanf(buffer, "%s  %lf", nombre, &memVirtual);
+                   
                 }
 
                 fp = popen("free -m | awk 'NR==3{printf \"%.2f\\n\", ($2)}'", "r");
@@ -67,27 +71,32 @@ int main(int argc, char *argv[]) {
 
                 if (fgets(buffer, sizeof(buffer), fp) != NULL) {
                     sscanf(buffer, "%lf", &memoria_total);
-                    printf("valor memoria: %lf \n", memoria_total);
+
                 }
 
                 porcentaje = ((memVirtual)/memoria_total) *100;
-                printf("Porcentaje de utilizacion del proceso %d en los ultinuto 5 : %.2f%%\n", pid, porcentaje);
+
+                sprintf(parametros, "PID: %d\nNOMBRE: %s\nPORCENTAJE DE MEMORIA VIRTUAL: %.2f%%\n", pid, nombre, porcentaje);
+                write(STDOUT_FILENO, parametros, strlen(parametros));
             }else {
-                snprintf(command, sizeof(command), "top -bn1 -p %d | awk 'NR>7 && $1==%d {{print $10}}'", pid, pid);
+                snprintf(command, sizeof(command), "top -bn1 -p %d | awk 'NR>7 && $1==%d {print $12, $10}'", pid, pid);
                 
                 fp = popen(command, "r");
                 if (fp == NULL) {
                     printf("Error al ejecutar el comando top\n");
                     return -1;
                 }
+
+                char nombre[25] = "";
                 if (fgets(buffer, sizeof(buffer), fp) != NULL) {
-                    sscanf(buffer, "%lf", &memReal);
-                     printf("valor memoria virtual: %lf \n", memReal);
+                    sscanf(buffer, "%s %lf",nombre, &memReal);
+            
                 }
 
                  porcentaje = memReal;
-                printf("Porcentaje de utilizacion del proceso %d en los ultinuto 5 : %.2f%%\n", pid, porcentaje);
-
+                
+                 sprintf(parametros, "PID: %d\nNOMBRE:%s\nPORCENTAJE DE MEMORIA :%.2f%%\n", pid, nombre, porcentaje);
+                write(STDOUT_FILENO, parametros, strlen(parametros));
             }
 
             
