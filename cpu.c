@@ -16,7 +16,8 @@ int main(int argc, char *argv[]) {
     if (argc == 1){
         fp = popen("top -b -n 1| grep 'Cpu(s)'", "r");
         if (fp == NULL) {
-            printf("Error al ejecutar el comando top\n");
+            sprintf(parametros, "Error al ejecutar el comando top\n");
+            write(STDOUT_FILENO, parametros, strlen(parametros));
             return -1;
         }
 
@@ -35,14 +36,14 @@ int main(int argc, char *argv[]) {
 
         fp = popen(command, "r");
         if (fp == NULL) {
-            printf("Error al ejecutar el comando top\n");
+            sprintf(parametros, "Error al ejecutar el comando top\n");
+            write(STDOUT_FILENO, parametros, strlen(parametros));
             return -1;
         }
 
         char buffer[MAX_BUFFER_SIZE];
         double porcentaje = 0.0;
         char nombre[25] = "";
-        fgets(buffer, sizeof(buffer), fp); 
         if (fgets(buffer, sizeof(buffer), fp) != NULL) {
             pid1 = 0;
             porcentaje = 0.0;
