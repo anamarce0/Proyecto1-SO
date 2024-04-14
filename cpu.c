@@ -9,7 +9,9 @@ int main(int argc, char *argv[]) {
     FILE *fp;
     char buffer[MAX_BUFFER_SIZE];
     double usuario = 0.0, sistema = 0.0;
-    double porcentaje = 0.0;
+    char parametros[MAX_BUFFER_SIZE] = " " ;
+    int pid1;
+
 
     if (argc == 1){
         fp = popen("top -b -n 1| grep 'Cpu(s)'", "r");
@@ -21,13 +23,14 @@ int main(int argc, char *argv[]) {
         fgets(buffer, sizeof(buffer), fp);
         sscanf(buffer, "%*s %lf %*s %lf", &usuario, &sistema);
 
-        porcentaje = usuario + sistema;
-        printf("Porcentaje de uso del CPU: %.2f%%\n", porcentaje);
-  
+        double porcentaje = usuario + sistema;
+        
+        sprintf(parametros, "PORCENTAJE:%.2f%%\n", porcentaje);
+        write(STDOUT_FILENO, parametros, strlen(parametros));
     }else if (argc == 2){
         int pid = atoi(argv[1]);
         char command[MAX_BUFFER_SIZE];
-        snprintf(command, sizeof(command), "top -bn1 -p %d -d 300 | awk 'NR>7 && $1==%d {{print $9}}'", pid, pid);
+         snprintf(command, sizeof(command), "ps -p %d -o pid,pcpu,comm", pid);
 
 
         fp = popen(command, "r");
@@ -36,13 +39,18 @@ int main(int argc, char *argv[]) {
             return -1;
         }
 
-        
         char buffer[MAX_BUFFER_SIZE];
-        porcentaje = 0.0;
+        double porcentaje = 0.0;
+        char nombre[25] = "";
+        fgets(buffer, sizeof(buffer), fp); 
         if (fgets(buffer, sizeof(buffer), fp) != NULL) {
-            sscanf(buffer, "%lf", &porcentaje);
+            pid1 = 0;
+            porcentaje = 0.0;
+           sscanf(buffer, "%d %lf %s", &pid1, &porcentaje, nombre);
+           
         }
-        printf("Porcentaje de utilizacion del proceso %d en los ultinuto 5 : %.2f%%\n", pid, porcentaje);
+        sprintf(parametros, "PID:%d\nNOMBRE:%s\nPORCENTAJE DE UTILIZACION EN LOS ULTIMOS 5 MINUTOS:%.2lf%%\n", pid1, nombre, porcentaje);
+        write(STDOUT_FILENO, parametros, strlen(parametros));
     }
-    return porcentaje;
+    return 0;
 }
