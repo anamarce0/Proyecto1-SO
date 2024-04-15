@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     if (pid_cpu == 0) {
         close(pipe_cpu[0]);
         dup2(pipe_cpu[1], STDOUT_FILENO);
-        execl("./cpu", ".cpu", (argc == 3) ? argv[2] : NULL, NULL);
+        execl("./cpu", "./cpu", (argc == 3) ? argv[2] : NULL, NULL);
         exit(EXIT_SUCCESS);
     }
     
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     if (pid_memoria == 0) {
         close(pipe_memoria[0]);
         dup2(pipe_memoria[1], STDOUT_FILENO); 
-        execl("./memory", ".memory", (argc == 3) ? argv[2] : NULL, (argc == 4) ? argv[3] : NULL, NULL);
+        execl("./memory", "./memory", argv[2], (argc == 4) ? argv[3] : NULL, NULL);
         exit(EXIT_SUCCESS);
     }
     
@@ -36,10 +36,9 @@ int main(int argc, char *argv[]) {
     if (pid_disk == 0) {
         close(pipe_disk[0]); 
         dup2(pipe_disk[1], STDOUT_FILENO); 
-        execl("./disk", ".disk", (argc == 3) ? argv[2] : NULL, argv[argc - 1], NULL);
+        execl("./disk", "./disk", (argc == 3) ? argv[2] : NULL, argv[argc - 1], NULL);
         exit(EXIT_SUCCESS);
     }
-    
     close(pipe_cpu[1]);
     close(pipe_memoria[1]);
     close(pipe_disk[1]);
